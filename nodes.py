@@ -46,23 +46,26 @@ def classifier_node(state: AgentState):
     return {"intent": "ENTITY", "confidence": 0.5, "steps": ["Groq failed to classify, falling back to ENTITY"]}
 
 def code_solver_node(state: AgentState):
-    from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-    
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a specialized API that extracts exact answers. You MUST output ONLY the raw string of the answer. No conversational text, no punctuation, no markdown, and no explanation. Your goal is a 100% exact match."),
-        ("human", "Charlie ran 10km, David ran 12km. Who ran more?"),
-        ("ai", "David"),
-        ("human", "Product A costs $50, Product B costs $30. Which is cheaper?"),
-        ("ai", "Product B"),
-        ("human", "Team X has 5 points, Team Y has 8 points. Who is leading?"),
-        ("ai", "Team Y"),
-        ("human", "{input}")
-    ])
-    
-    # We must format the prompt with the input before invoking
-    chain = prompt | llm_70b
-    response = chain.invoke({"input": state["input"]})
-    return {"result": {"solution": response.content.strip()}, "steps": ["High-precision message-based answer generated"]}
+    prompt = ChatPromptTemplate.from_template(
+        "You are an automated extraction and math API. Your output MUST be ONLY the raw string value requested. \n"
+        "STRICT RULES:\n"
+        "1. NO conversational text (e.g., do not say 'The answer is').\n"
+        "2. NO punctuation at the end of the answer.\n"
+        "3. NO markdown formatting.\n"
+        "4. If the question asks 'Who...', output ONLY the name.\n"
+        "5. If the question asks for a number, output ONLY the digits.\n\n"
+        "Examples:\n"
+        "Q: Charlie ran 10km, David ran 12km. Who ran more?\n"
+        "A: David\n\n"
+        "Q: Product A costs $50, Product B costs $30. Which is cheaper?\n"
+        "A: Product B\n\n"
+        "Q: Team X has 5 points, Team Y has 8 points. Who is leading?\n"
+        "A: Team Y\n\n"
+        "Q: {input}\n"
+        "A:"
+    )
+    response = llm_70b.invoke(prompt.format(input=state["input"]))
+    return {"result": {"solution": response.content.strip()}, "steps": ["High-precision exact answer generated using 3 examples"]}
 
 def summarizer_node(state: AgentState):
     prompt = ChatPromptTemplate.from_template(

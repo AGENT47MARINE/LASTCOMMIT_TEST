@@ -27,34 +27,60 @@ async def health():
 @api.post("/v1/answer", response_model=EvaluationOutput)
 async def process_for_competition(data: EvaluationInput):
     """
-    Modular Endpoint for External Evaluation Engine.
-    Currently hard-routed to Level 05.
+    Main Endpoint for External Evaluation Engine.
     """
     print(f"\n--- New Request Received ---")
     print(f"Query: {data.query}")
     start_time = time.time()
     try:
-        import importlib
-        # Route to the current active level (05)
-        agent = importlib.import_module("challenges.05.agent")
+        # 1. Initialize State
+        initial_state = {
+            "input": data.query,
+            "intent": None,
+            "result": None,
+            "confidence": 0.0,
+            "error": None,
+            "steps": [],
+            "retries": 0
+        }
         
-        # Execute the modular agent
-        raw_answer = agent.run(data.query)
+        # 2. Invoke the Cloud Graph
+        final_state = app.invoke(initial_state)
+        
+        # 3. Extract the primary result as a string for the 'output' field
+        result_dict = final_state.get("result", {})
+        
+        # Flattening logic: deep-dives into the UniversalOutput structure
+        worker_result = result_dict.get("result", {}) if isinstance(result_dict, dict) else {}
+        
+        # Priority mapping for different worker outputs
+        search_keys = ["answer", "solution", "summary", "analysis", "entities", "anomalies", "question"]
+        
+        answer_str = None
+        for key in search_keys:
+            if key in worker_result:
+                answer_str = worker_result[key]
+                break
+        
+        # Fallback to top-level if not found in nested result
+        if not answer_str:
+            for key in search_keys:
+                if key in result_dict:
+                    answer_str = result_dict[key]
+                    break
+        
+        # Ultimate fallback
+        if not answer_str:
+            answer_str = str(result_dict)
 
         # --- POST-PROCESSING FOR 100% SCORE ---
-        answer_str = raw_answer
         if isinstance(answer_str, str):
             # Remove trailing periods, quotes, and whitespace
             answer_str = answer_str.strip().strip('.').strip('"').strip("'").strip()
             
         duration = time.time() - start_time
-        
-        # Verbose Logging for Render Dashboard
-        print(f"Assets Received: {data.assets}")
-        print(f"Raw LLM Output: '{raw_answer}'")
-        print(f"NEURON-12 OUTPUT: '{answer_str}'")
+        print(f"Response: {answer_str[:100]}...")
         print(f"Processing time: {duration:.2f}s")
-        print(f"JSON Sent: {{'output': '{answer_str}'}}")
         print(f"----------------------------\n")
         return {"output": answer_str}
 
