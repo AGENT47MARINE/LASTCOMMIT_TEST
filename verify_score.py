@@ -8,10 +8,10 @@ def calculate_exact_match(predicted, ground_truth):
     return 1.0 if p == g else 0.0
 
 test_cases = [
-    {"query": "Numbers: 2,5,8,11. Sum even numbers.", "expected": "10"},
-    {"query": "Numbers: 1, 3, 5, 7. Sum even numbers.", "expected": "0"},
-    {"query": "Numbers: 10, 15, 20. Sum numbers greater than 10.", "expected": "35"},
-    {"query": "Numbers: 4, 9, 16. Sum odd numbers.", "expected": "9"}
+    {"query": "Alice scored 80, Bob scored 90. Who scored highest?", "expected": "Bob"},
+    {"query": "Car A goes 100mph, Car B goes 120mph. Which is faster?", "expected": "Car B"},
+    {"query": "Laptop A is $1000, Laptop B is $800. Which is more expensive?", "expected": "Laptop A"},
+    {"query": "John is 30 years old, Mike is 25 years old. Who is younger?", "expected": "Mike"}
 ]
 
 print("--- Starting Cosine Similarity (Exact Match) Test ---")
