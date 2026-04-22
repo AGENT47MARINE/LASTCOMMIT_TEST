@@ -1,15 +1,23 @@
 import os
+import logging
 from graph import app
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Ensure LangSmith is tracking if keys are provided
-# export LANGCHAIN_TRACING_V2=true
-# export LANGCHAIN_API_KEY=your_key_here
+# --- LOGGING CONFIGURATION ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("interactions.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("orchestrator")
 
 def run_orchestrator(query: str):
-    print(f"\n--- Processing Query: {query} ---")
+    logger.info(f"TEST QUERY: {query}")
     
     # Initialize state
     initial_state = {
@@ -26,9 +34,8 @@ def run_orchestrator(query: str):
     config = {"configurable": {"thread_id": "1"}}
     final_state = app.invoke(initial_state, config=config)
     
-    print("\n--- Final Output (Strict JSON) ---")
     import json
-    print(json.dumps(final_state["result"], indent=2))
+    logger.info(f"FINAL RESULT: {json.dumps(final_state['result'], indent=2)}")
     
     print("\n--- Execution Steps ---")
     for step in final_state["steps"]:

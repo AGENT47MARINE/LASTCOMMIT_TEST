@@ -1,4 +1,5 @@
 import time
+import logging
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -7,6 +8,17 @@ from dotenv import load_dotenv
 from graph import app  # Your LangGraph workflow
 
 load_dotenv()
+
+# --- LOGGING CONFIGURATION ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("interactions.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("evaluator")
 
 # Initialize FastAPI - Competition Ready
 api = FastAPI(title="NEURON-12 Cloud Gateway")
@@ -21,7 +33,7 @@ class EvaluationOutput(BaseModel):
 
 @api.get("/")
 async def health():
-    print(">>> Health check request received")
+    logger.info("Health check request received")
     return {"status": "online", "engine": "Groq-70B/8B Hybrid"}
 
 @api.post("/v1/answer", response_model=EvaluationOutput)
@@ -29,8 +41,7 @@ async def process_for_competition(data: EvaluationInput):
     """
     Main Endpoint for External Evaluation Engine.
     """
-    print(f"\n--- New Request Received ---")
-    print(f"Query: {data.query}")
+    logger.info(f"REQUEST START | Query: {data.query}")
     start_time = time.time()
     try:
         # 1. Initialize State
@@ -74,11 +85,7 @@ async def process_for_competition(data: EvaluationInput):
             answer_str = str(result_dict)
 
         duration = time.time() - start_time
-        print(f">>> EVALUATOR QUERY: {data.query}")
-        print(f">>> FINAL RESPONSE: '{answer_str}'")
-        print(f">>> COMPLIANCE: 100% Cosine Expected")
-        print(f">>> PROCESSING TIME: {duration:.4f}s")
-        print(f"----------------------------\n")
+        logger.info(f"REQUEST COMPLETE | Duration: {duration:.4f}s | Response: '{answer_str}'")
         return {"output": answer_str}
 
     except Exception as e:
