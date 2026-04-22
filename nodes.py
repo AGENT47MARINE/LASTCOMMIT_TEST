@@ -51,6 +51,10 @@ def _extract_actual_task(query: str) -> str:
 
 def _solve_score_comparison(query: str) -> Optional[str]:
     """Deterministically solve simple '<name> scored <num>' comparison questions."""
+    q = query.lower()
+    if "rule" in q or "input number" in q:
+        return None
+
     # Allow multi-word names (e.g. 'red team') by looking for sequences of words before the verb
     # We use a more restrictive pattern to avoid capturing conjunctions like 'and the'
     pairs = re.findall(
@@ -105,7 +109,7 @@ def _solve_numeric_comparison(query: str) -> Optional[str]:
     q = query.lower()
     
     # Priority 1: Level 7 / Rule-based
-    if "rule" in q and ("even" in q or "odd" in q):
+    if "rule" in q or "input number" in q:
         return None # Let the LLM handle dynamic rule challenges
 
     # Priority 2: Simple numeric comparison
