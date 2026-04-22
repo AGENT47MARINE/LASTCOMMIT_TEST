@@ -1,5 +1,4 @@
 from graph import app
-import re
 
 def calculate_exact_match(predicted, ground_truth):
     # Standardize: strip whitespace and convert to upper
@@ -14,7 +13,7 @@ test_cases = [
     {"query": "Is an elephant bigger or a banana?", "expected": "Elephant"}
 ]
 
-print("--- Starting Cosine Similarity (Exact Match) Test ---")
+print("--- Starting Exact Match Test ---")
 total_score = 0
 
 for case in test_cases:
@@ -45,4 +44,4 @@ for case in test_cases:
     print("-" * 30)
 
 final_accuracy = (total_score / len(test_cases)) * 100
-print(f"Final Average Cosine (Exact Match) Score: {final_accuracy}%")
+print(f"Final Average Exact Match Score: {final_accuracy}%")
