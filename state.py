@@ -16,4 +16,5 @@ class AgentState(TypedDict):
     confidence: float
     error: Optional[str]
     steps: Annotated[List[str], operator.add]
+    reasoning: Annotated[List[str], operator.add]
     retries: int

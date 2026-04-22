@@ -58,7 +58,12 @@ def run_test_suite(file_path):
             duration = time.time() - start_time
             logger.info(f"Actual: '{actual}' | Expected: '{expected}' | Time: {duration:.2f}s")
             
-            # Simple substring or exact match check (evaluator uses cosine, we use logic)
+            # Log reasoning
+            if "reasoning" in final_state:
+                for r in final_state["reasoning"]:
+                    logger.info(f"Reasoning: {r}")
+
+            # Simple substring or exact match check
             if str(expected).lower() in str(actual).lower():
                 logger.info("RESULT: PASSED")
                 passed += 1

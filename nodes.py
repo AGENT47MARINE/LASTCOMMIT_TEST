@@ -112,79 +112,65 @@ def classifier_node(state: AgentState):
     query = state["input"]
     prompt = ChatPromptTemplate.from_template(
         "Classify the user intent into one of: SUMMARIZE, ENTITY, RAG, CODE, ANOMALY, STRUCTURED.\n"
+        "First, state your reasoning briefly, then provide the keyword.\n"
+        "Format: THOUGHT: <reasoning>\nCLASSIFICATION: <KEYWORD>\n\n"
         "Use CODE for arithmetic, comparisons, ranking, winner/loser questions, tie checks, or multi-step reasoning.\n"
-        "Use CODE when the question contains implicit math words like double, half, more than, less than, higher, lower, greatest, smallest, outlier, or compare.\n"
-        "Use ENTITY for extracting a single fact, name, date, email, room, or event.\n"
-        "Use SUMMARIZE only when the user explicitly asks to summarize or paraphrase.\n"
-        "Use ANOMALY for requests to identify unusual patterns or outliers.\n"
-        "Use STRUCTURED for requests involving structured data analysis or transformation.\n"
-        "Use RAG only if the user asks for external knowledge lookup.\n"
-        "Output ONLY the keyword, nothing else.\n"
-        "Examples:\n"
-        "Q: Alice scored 80, Bob scored 90. Who scored highest?\n"
-        "A: CODE\n"
-        "Q: Alice has 10. Bob has double Alice. Charlie has 5 less than Bob. Who has the most?\n"
-        "A: CODE\n"
-        "Q: Summarize the comparison between 50 and 100.\n"
-        "A: SUMMARIZE\n"
-        "Q: Extract the email from this text.\n"
-        "A: ENTITY\n"
-        "Q: Summarize this paragraph.\n"
-        "A: SUMMARIZE\n"
         "Input: {input}"
     )
     response = llm_70b.invoke(prompt.format(input=query))
-    content = response.content.strip().upper()
+    content = response.content.strip()
     
+    reasoning = "N/A"
+    classification = content
+    if "THOUGHT:" in content and "CLASSIFICATION:" in content:
+        parts = content.split("CLASSIFICATION:")
+        reasoning = parts[0].replace("THOUGHT:", "").strip()
+        classification = parts[1].strip().upper()
+
     for choice in ["SUMMARIZE", "ENTITY", "RAG", "CODE", "ANOMALY", "STRUCTURED"]:
-        if choice in content:
-            return {"intent": choice, "confidence": 0.9, "steps": [f"Groq-70B identified {choice}"]}
+        if choice in classification:
+            return {
+                "intent": choice, 
+                "confidence": 0.9, 
+                "steps": [f"Groq-70B identified {choice}"],
+                "reasoning": [f"Classifier: {reasoning}"]
+            }
             
-    return {"intent": "ENTITY", "confidence": 0.5, "steps": ["Groq failed to classify, falling back to ENTITY"]}
+    return {
+        "intent": "ENTITY", 
+        "confidence": 0.5, 
+        "steps": ["Groq failed to classify, falling back to ENTITY"],
+        "reasoning": ["Classifier failed to follow format"]
+    }
 
 def code_solver_node(state: AgentState):
     prompt = ChatPromptTemplate.from_template(
-        "You are an API serving exact answers for an evaluator. Your goal is to match the expected answer string exactly.\n"
-        "Think step by step internally, but output only the final answer.\n"
-        "Follow these rules strictly:\n"
-        "1. NO trailing punctuation.\n"
-        "2. NO explanations, no JSON, no markdown, no bullets.\n"
-        "3. If the question is a comparison, choose the correct winner, loser, max, min, or tie result.\n"
-        "4. If the question uses reverse wording like lowest/smallest/least/lower, choose the minimum.\n"
-        "5. If the values are equal, return Equal.\n"
-        "6. If the question includes negatives, decimals, currency, or units, compare after normalizing them mentally.\n"
-        "7. If the question asks for a list, return items comma-space separated unless another format is explicitly requested.\n"
-        "8. If the question asks for a date, preserve the most natural answer format used by the question.\n"
-        "9. If there is no entity or no anomaly, return the most concise natural answer that fits the question.\n\n"
-        "Examples:\n"
-        "Example 1:\n"
-        "Q: Compare: 15, 25. Which is greater?\n"
-        "A: 25\n\n"
-        "Example 2:\n"
-        "Q: Is an elephant bigger or a banana?\n"
-        "A: Elephant\n\n"
-        "Example 3:\n"
-        "Q: Both Alice and Bob scored 90. Who scored higher?\n"
-        "A: Equal\n\n"
-        "Example 4:\n"
-        "Q: Alice scored 90, Bob scored 80. Who scored lowest?\n"
-        "A: Bob\n\n"
-        "Example 5:\n"
-        "Q: Account A: -50.5, Account B: -20. Who has a higher balance?\n"
-        "A: Account B\n\n"
-        "Example 6:\n"
-        "Q: If I have a dozen apples and give half to Bob, how many are left?\n"
-        "A: 6\n\n"
-        "Example 7:\n"
-        "Q: Alice has 10. Bob has double Alice. Charlie has 5 less than Bob. Who has the most?\n"
-        "A: Bob\n\n"
+        "You are an API serving exact answers. Match the expected answer string exactly.\n"
+        "First, think step by step. Then output the final answer.\n"
+        "Format:\n"
+        "THOUGHT: <your reasoning>\n"
+        "ANSWER: <final answer>\n\n"
+        "Rules:\n"
+        "1. NO trailing punctuation in ANSWER.\n"
+        "2. NO conversational filler in ANSWER.\n"
+        "3. If a tie, ANSWER: Equal.\n\n"
         "Q: {input}\n"
         "A:"
     )
     response = llm_70b.invoke(prompt.format(input=state["input"]))
+    content = response.content.strip()
+    
+    reasoning = "N/A"
+    answer = content
+    if "THOUGHT:" in content and "ANSWER:" in content:
+        parts = content.split("ANSWER:")
+        reasoning = parts[0].replace("THOUGHT:", "").strip()
+        answer = parts[1].strip()
+
     return {
-        "result": {"solution": _normalize_answer(response.content)},
-        "steps": ["High-precision exact answer generated using 3 examples"]
+        "result": {"solution": _normalize_answer(answer)},
+        "steps": ["High-precision answer generated with reasoning"],
+        "reasoning": [f"Solver: {reasoning}"]
     }
 
 def summarizer_node(state: AgentState):

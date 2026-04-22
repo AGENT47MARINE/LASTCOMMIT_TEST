@@ -86,6 +86,12 @@ async def process_for_competition(data: EvaluationInput):
 
         duration = time.time() - start_time
         logger.info(f"REQUEST COMPLETE | Duration: {duration:.4f}s | Response: '{answer_str}'")
+        
+        # Log reasoning
+        if "reasoning" in final_state:
+            for r in final_state["reasoning"]:
+                logger.info(f"REASONING: {r}")
+                
         return {"output": answer_str}
 
     except Exception as e:
