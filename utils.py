@@ -5,7 +5,7 @@ def rule_based_route(query: str):
     q = query.lower()
     
     # Priority 1: Math/Logic (CODE)
-    if any(word in q for word in ["calculate", "math", "code", "solve", "sum", "numbers", "compare", "greater", "smaller", "+", "-", "*", "/", "is ", "are ", "do ", "does ", "can "]):
+    if any(word in q for word in ["calculate", "math", "code", "solve", "sum", "numbers", "compare", "greater", "smaller", "higher", "lower", "better", "who", "more", "+", "-", "*", "/", "is ", "are ", "do ", "does ", "can "]):
         return "CODE"
     
     # Priority 2: Summarization

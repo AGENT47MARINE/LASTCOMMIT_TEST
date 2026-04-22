@@ -60,7 +60,7 @@ def code_solver_node(state: AgentState):
         "Q: Is an elephant bigger or a banana?\n"
         "A: Elephant\n\n"
         "Example 3:\n"
-        "Q: Which is greater: 10 or 10?\n"
+        "Q: Both Alice and Bob scored 90. Who scored higher?\n"
         "A: Equal\n\n"
         "Q: {input}\n"
         "A:"
