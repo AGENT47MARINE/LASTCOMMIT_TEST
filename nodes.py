@@ -47,14 +47,23 @@ def classifier_node(state: AgentState):
 
 def code_solver_node(state: AgentState):
     prompt = ChatPromptTemplate.from_template(
-        "You are an API serving exact answers for an evaluator. "
-        "Rule 1: Solve the math/code problem correctly.\n"
-        "Rule 2: Respond with EXACTLY one sentence. For addition, use 'The sum is X.'. For other operations, use the appropriate word (e.g., 'The difference is X.', 'The product is X.').\n"
-        "Rule 3: NO conversational text, NO markdown, NO explanations.\n"
-        "Problem: {input}"
+        "You are an API serving exact answers for an evaluator. Your goal is to achieve a 100% cosine similarity score with the expected answer.\n"
+        "Respond with EXACTLY the answer, with NO conversational filler, NO extra words, NO markdown, and NO punctuation at the end.\n\n"
+        "Here are 3 examples to guide your output:\n"
+        "Example 1:\n"
+        "Q: Is 9 an odd number?\n"
+        "A: YES\n\n"
+        "Example 2:\n"
+        "Q: Is 4 an even number?\n"
+        "A: YES\n\n"
+        "Example 3:\n"
+        "Q: Is 7 an even number?\n"
+        "A: NO\n\n"
+        "Q: {input}\n"
+        "A:"
     )
     response = llm_70b.invoke(prompt.format(input=state["input"]))
-    return {"result": {"solution": response.content.strip()}, "steps": ["High-precision math solution generated"]}
+    return {"result": {"solution": response.content.strip()}, "steps": ["High-precision exact answer generated using 3 examples"]}
 
 def summarizer_node(state: AgentState):
     prompt = ChatPromptTemplate.from_template(
