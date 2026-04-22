@@ -1,0 +1,1 @@
+# Makes challenges a package
