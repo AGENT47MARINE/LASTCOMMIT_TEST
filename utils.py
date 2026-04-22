@@ -3,18 +3,20 @@ import re
 def rule_based_route(query: str):
     """Tier 0: Ultra-fast regex routing (No LLM, No Embeddings)"""
     q = query.lower()
+    
+    # Priority 1: Math/Logic (CODE)
+    if any(word in q for word in ["calculate", "math", "code", "solve", "+", "-", "*", "/"]):
+        return "CODE"
+    
+    # Priority 2: Summarization
     if any(word in q for word in ["summarize", "summary", "tl;dr"]):
         return "SUMMARIZE"
+        
+    # Priority 3: Facts/Entities
     if any(word in q for word in ["extract", "entities", "who is", "what is"]):
         return "ENTITY"
-    if any(word in q for word in ["calculate", "math", "code", "solve"]):
-        return "CODE"
+        
     return None
 
 def semantic_route(query: str):
-    """
-    Tier 1 (Lite): String-based similarity.
-    Replaced heavy SentenceTransformers for competition speed.
-    """
-    # Simply pass through to LLM for now to avoid loading heavy models
     return None, 0.0
