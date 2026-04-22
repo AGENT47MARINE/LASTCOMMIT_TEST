@@ -106,7 +106,7 @@ def _solve_numeric_comparison(query: str) -> Optional[str]:
     
     # Priority 1: Level 7 / Rule-based
     if "rule" in q and ("even" in q or "odd" in q):
-        return _solve_level_7_rules(query)
+        return None # Let the LLM handle dynamic rule challenges
 
     # Priority 2: Simple numeric comparison
     # Only trigger if explicit comparison words are present to avoid false positives
@@ -144,34 +144,7 @@ def _solve_numeric_comparison(query: str) -> Optional[str]:
 
     return None
 
-def _solve_level_7_rules(query: str) -> Optional[str]:
-    """
-    Apply 3 sequential rules for Level 7 Challenge:
-    1. If even -> *2, if odd -> +10
-    2. If > 20 -> -5, else -> +3
-    3. If div by 3 -> 'FIZZ', else -> number
-    """
-    # Find the input number - usually it's the first or labeled as 'input'
-    nums = re.findall(r"\b\d+\b", query)
-    if not nums:
-        return None
-    
-    # Heuristic: Find a number that isn't a rule constant (1, 2, 3, 10, 20, 5)
-    target = None
-    rule_constants = {1, 2, 3, 10, 20, 5}
-    for n_str in nums:
-        n = int(n_str)
-        if n not in rule_constants:
-            target = n
-            break
-    if target is None: target = int(nums[0])
 
-    # Rule 1
-    val = target * 2 if target % 2 == 0 else target + 10
-    # Rule 2
-    val = val - 5 if val > 20 else val + 3
-    # Rule 3
-    return "FIZZ" if val % 3 == 0 else str(val)
 
 
 def _canonicalize_to_input_token(answer: str, query: str) -> str:
@@ -250,7 +223,7 @@ def code_solver_node(state: AgentState):
     query = _extract_actual_task(state["input"])
     
     # 1. Try deterministic solvers first for high precision
-    deterministic = _solve_level_7_rules(query) or _solve_score_comparison(query) or _solve_numeric_comparison(query)
+    deterministic = _solve_score_comparison(query) or _solve_numeric_comparison(query)
     if deterministic:
         return {
             "result": {"solution": deterministic},
