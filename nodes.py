@@ -6,7 +6,6 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from state import AgentState
 from dotenv import load_dotenv
-from utils import rule_based_route, semantic_route
 
 load_dotenv()
 
@@ -24,7 +23,11 @@ llm_8b = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
 
 def _solve_score_comparison(query: str) -> Optional[str]:
     """Deterministically solve simple '<name> scored <num>' comparison questions."""
-    pairs = re.findall(r"\b([A-Za-z][A-Za-z'\-]*)\s+scored\s+(-?\d+(?:\.\d+)?)\b", query, flags=re.IGNORECASE)
+    pairs = re.findall(
+        r"\b([A-Za-z][A-Za-z'\-]*)\s+(?:scored|got|earned|has|have|had)\s+(-?\d+(?:\.\d+)?)\b",
+        query,
+        flags=re.IGNORECASE,
+    )
     if len(pairs) < 2:
         return None
 
@@ -44,7 +47,43 @@ def _solve_score_comparison(query: str) -> Optional[str]:
     if tie:
         return "Equal"
 
-    return best_name.capitalize() if best_name else None
+    return best_name if best_name else None
+
+
+def _solve_numeric_comparison(query: str) -> Optional[str]:
+    """Handle standalone numeric comparison questions such as 'Compare: 40, 20'. """
+    numbers = re.findall(r"-?\d+(?:\.\d+)?", query)
+    if len(numbers) < 2:
+        return None
+
+    q = query.lower()
+    if not any(word in q for word in ["compare", "greater", "higher", "bigger", "more", "larger", "highest", "max", "largest", "bigger"]):
+        if not any(word in q for word in ["smaller", "lower", "less", "least", "minimum", "min"]):
+            return None
+
+    values = [float(n) for n in numbers[:2]]
+    if values[0] == values[1]:
+        return "Equal"
+
+    if any(word in q for word in ["smaller", "lower", "less", "least", "minimum", "min"]):
+        winner = numbers[0] if values[0] < values[1] else numbers[1]
+    else:
+        winner = numbers[0] if values[0] > values[1] else numbers[1]
+
+    # Preserve integer formatting when possible.
+    return str(int(float(winner))) if float(winner).is_integer() else winner
+
+
+def _canonicalize_to_input_token(answer: str, query: str) -> str:
+    """Match the answer back to the casing used in the query when possible."""
+    if not answer:
+        return answer
+
+    token_map = {}
+    for token in re.findall(r"[A-Za-z][A-Za-z'\-]*", query):
+        token_map.setdefault(token.lower(), token)
+
+    return token_map.get(answer.lower(), answer)
 
 
 def _normalize_answer(raw: str) -> str:
@@ -69,16 +108,22 @@ def _normalize_answer(raw: str) -> str:
 
 def classifier_node(state: AgentState):
     query = state["input"]
-    rule_intent = rule_based_route(query)
-    if rule_intent: return {"intent": rule_intent, "confidence": 1.0, "steps": ["Rule-routed"]}
-    
-    sem_intent, sem_score = semantic_route(query)
-    if sem_intent and sem_score > 0.85: return {"intent": sem_intent, "confidence": sem_score, "steps": ["Semantic-routed"]}
-    
     prompt = ChatPromptTemplate.from_template(
         "Classify the user intent into one of: SUMMARIZE, ENTITY, RAG, CODE, ANOMALY, STRUCTURED.\n"
-        "If the input is just a statement containing a date, room, name, or event, classify it as ENTITY.\n"
+        "Use CODE for arithmetic, comparisons, ranking, winner/loser questions, and tie checks.\n"
+        "Use ENTITY for extracting a single fact, name, date, email, room, or event.\n"
+        "Use SUMMARIZE for requests to summarize text.\n"
+        "Use ANOMALY for requests to identify unusual patterns.\n"
+        "Use STRUCTURED for requests involving structured data analysis or transformation.\n"
+        "Use RAG only if the user asks for external knowledge lookup.\n"
         "Output ONLY the keyword, nothing else.\n"
+        "Examples:\n"
+        "Q: Alice scored 80, Bob scored 90. Who scored highest?\n"
+        "A: CODE\n"
+        "Q: Extract the email from this text.\n"
+        "A: ENTITY\n"
+        "Q: Summarize this paragraph.\n"
+        "A: SUMMARIZE\n"
         "Input: {input}"
     )
     response = llm_70b.invoke(prompt.format(input=query))
@@ -91,19 +136,14 @@ def classifier_node(state: AgentState):
     return {"intent": "ENTITY", "confidence": 0.5, "steps": ["Groq failed to classify, falling back to ENTITY"]}
 
 def code_solver_node(state: AgentState):
-    deterministic = _solve_score_comparison(state["input"])
-    if deterministic:
-        return {
-            "result": {"solution": deterministic},
-            "steps": ["Deterministic score comparison solved"]
-        }
-
     prompt = ChatPromptTemplate.from_template(
-        "You are an API serving exact answers for an evaluator. Your goal is to achieve a 100% cosine similarity score with the expected answer.\n"
+        "You are an API serving exact answers for an evaluator. Your goal is to match the expected answer string exactly.\n"
         "Respond with EXACTLY the answer string required for a 100% match. Follow these rules strictly:\n"
         "1. NO trailing punctuation.\n"
-        "2. Capitalize the first letter of the answer (if it is a word).\n"
-        "3. NO conversational filler or explanations.\n\n"
+        "2. Preserve the casing used in the question when the answer is a name or entity.\n"
+        "3. NO conversational filler or explanations.\n"
+        "4. If the answer is a tie, return Equal.\n"
+        "5. Do all reasoning inside the model and output only the final answer.\n\n"
         "Here are 3 examples to guide your output:\n"
         "Example 1:\n"
         "Q: Compare: 15, 25. Which is greater?\n"
