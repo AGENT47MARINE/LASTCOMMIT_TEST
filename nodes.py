@@ -31,8 +31,7 @@ def _extract_actual_task(query: str) -> str:
     patterns = [
         r"(?is)actual\s+task\s*[:\-]\s*(.*)$",
         r"(?is)actual\s+question\s*[:\-]\s*(.*)$",
-        r"(?is)task\s*[:\-]\s*(.*)$",
-        r"(?is)question\s*[:\-]\s*(.*)$",
+        # Avoid bare 'task:' or 'question:' as they often label the end of a long prompt
     ]
 
     best_task = query
