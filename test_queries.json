@@ -1,0 +1,74 @@
+[
+  {
+    "category": "Basic Comparison",
+    "query": "Alice scored 85, Bob scored 92. Who scored highest?",
+    "expected": "Bob",
+    "note": "Simple max check"
+  },
+  {
+    "category": "Reverse Comparison",
+    "query": "The blue team got 40 points and the red team got 35 points. Which team had the lowest score?",
+    "expected": "red team",
+    "note": "Checking 'lowest' keyword"
+  },
+  {
+    "category": "Ties",
+    "query": "Compare: 50, 50. Which is greater?",
+    "expected": "Equal",
+    "note": "Checking equality handling"
+  },
+  {
+    "category": "Multi-step Logic",
+    "query": "Dave has 20 apples. Sarah has double Dave's amount. Mike has 10 fewer than Sarah. Who has the most apples?",
+    "expected": "Sarah",
+    "note": "Testing reasoning (20, 40, 30)"
+  },
+  {
+    "category": "Negative & Decimals",
+    "query": "Compare these temperatures: -15.5 and -20. Which is warmer?",
+    "expected": "-15.5",
+    "note": "Testing negative float comparison"
+  },
+  {
+    "category": "Entity Extraction (Email)",
+    "query": "Extract the contact email from this: 'For support, reach out to help@company.io immediately.'",
+    "expected": "help@company.io",
+    "note": "Precise extraction"
+  },
+  {
+    "category": "Entity Extraction (Date)",
+    "query": "When is the deadline mentioned here: 'The project must be submitted by 15th August 2024.'",
+    "expected": "15th August 2024",
+    "note": "Preserving input format"
+  },
+  {
+    "category": "Anomaly Detection",
+    "query": "Look at these server response times: 20ms, 22ms, 21ms, 5000ms, 19ms. Identify the anomaly.",
+    "expected": "5000ms",
+    "note": "Outlier detection"
+  },
+  {
+    "category": "Summarization",
+    "query": "Summarize this: The NEURON-12 system utilizes a multi-node LangGraph architecture to orchestrate between Groq 70B and 8B models for optimized cost and performance.",
+    "expected": "NEURON-12 uses LangGraph and Groq models for optimized performance.",
+    "note": "Checking concise one-sentence summary"
+  },
+  {
+    "category": "Implicit Arithmetic",
+    "query": "If I have a dozen eggs and use 4 for a cake, how many are left?",
+    "expected": "8",
+    "note": "Testing 'dozen' and subtraction"
+  },
+  {
+    "category": "Casing Mirroring",
+    "query": "Who is the CEO? alice or BOB?",
+    "expected": "BOB",
+    "note": "Testing if casing matches query input for the winner"
+  },
+  {
+    "category": "Ambiguity/No Data",
+    "query": "Which planet is larger, Jupiter or the sun?",
+    "expected": "the sun",
+    "note": "General knowledge check within CODE/ENTITY context"
+  }
+]
