@@ -38,17 +38,17 @@ def jaccard_ngram(a: str, b: str, n: int = 2) -> float:
 tests = [
     # Sample case from the challenge brief
     (
-        "Alice scored 80, Bob scored 90. Who scored highest?",
-        "Bob",
+        "Is 17 a prime number?",
+        "Yes.",
     ),
     # Additional edge cases
     (
-        "Car A goes 100mph, Car B goes 120mph. Which is faster?",
-        "Car B",
+        "Is 8 an odd number?",
+        "No.",
     ),
     (
-        "John is 30 years old, Mike is 25 years old. Who is younger?",
-        "Mike",
+        "Is 9 an odd number?",
+        "Yes.",
     )
 ]
 

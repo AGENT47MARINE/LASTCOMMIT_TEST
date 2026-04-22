@@ -43,8 +43,9 @@ async def process_for_competition(data: EvaluationInput):
 
         # --- POST-PROCESSING FOR 100% SCORE ---
         if isinstance(answer_str, str):
-            # Remove trailing periods, quotes, and whitespace
-            answer_str = answer_str.strip().strip('.').strip('"').strip("'").strip()
+            # Remove trailing quotes and whitespace, but DO NOT strip periods
+            # because boolean evaluators expect "Yes." and "No."
+            answer_str = answer_str.strip().strip('"').strip("'").strip()
             
         duration = time.time() - start_time
         print(f"Response: {answer_str[:100]}...")
