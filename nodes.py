@@ -30,10 +30,20 @@ def classifier_node(state: AgentState):
     sem_intent, sem_score = semantic_route(query)
     if sem_intent and sem_score > 0.85: return {"intent": sem_intent, "confidence": sem_score, "steps": ["Semantic-routed"]}
     
-    prompt = ChatPromptTemplate.from_template("Classify intent: SUMMARIZE, ENTITY, RAG, CODE, ANOMALY, STRUCTURED. Input: {input}")
+    prompt = ChatPromptTemplate.from_template(
+        "Classify the user intent into one of: SUMMARIZE, ENTITY, RAG, CODE, ANOMALY, STRUCTURED.\n"
+        "Output ONLY the keyword.\n"
+        "Input: {input}"
+    )
     response = llm_70b.invoke(prompt.format(input=query))
-    intent = response.content.strip().upper().split()[0].replace(".", "")
-    return {"intent": intent, "confidence": 0.9, "steps": [f"Groq classified as {intent}"]}
+    content = response.content.strip().upper()
+    
+    # Extract the first matching keyword
+    for choice in ["SUMMARIZE", "ENTITY", "RAG", "CODE", "ANOMALY", "STRUCTURED"]:
+        if choice in content:
+            return {"intent": choice, "confidence": 0.9, "steps": [f"Groq-70B identified {choice}"]}
+            
+    return {"intent": "AMBIGUOUS", "confidence": 0.0, "steps": ["Groq failed to classify"]}
 
 def code_solver_node(state: AgentState):
     """

@@ -50,16 +50,27 @@ async def process_for_competition(data: EvaluationInput):
         # 3. Extract the primary result as a string for the 'output' field
         result_dict = final_state.get("result", {})
         
-        # Flattening logic: finds the most relevant text content
-        if "answer" in result_dict:
-            answer_str = result_dict["answer"]
-        elif "solution" in result_dict:
-            answer_str = result_dict["solution"]
-        elif "summary" in result_dict:
-            answer_str = result_dict["summary"]
-        elif "analysis" in result_dict:
-            answer_str = result_dict["analysis"]
-        else:
+        # Flattening logic: deep-dives into the UniversalOutput structure
+        worker_result = result_dict.get("result", {}) if isinstance(result_dict, dict) else {}
+        
+        # Priority mapping for different worker outputs
+        search_keys = ["answer", "solution", "summary", "analysis", "entities", "anomalies", "question"]
+        
+        answer_str = None
+        for key in search_keys:
+            if key in worker_result:
+                answer_str = worker_result[key]
+                break
+        
+        # Fallback to top-level if not found in nested result
+        if not answer_str:
+            for key in search_keys:
+                if key in result_dict:
+                    answer_str = result_dict[key]
+                    break
+        
+        # Ultimate fallback
+        if not answer_str:
             answer_str = str(result_dict)
 
         duration = time.time() - start_time
