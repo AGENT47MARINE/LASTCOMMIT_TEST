@@ -1,0 +1,12 @@
+langchain
+langchain-groq
+langchain-openai
+langchain-core
+langgraph
+langsmith
+pydantic
+python-dotenv
+chromadb
+sentence-transformers
+fastapi
+uvicorn
